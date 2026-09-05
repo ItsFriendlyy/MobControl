@@ -10,19 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # 1. جلب ملفات الكود من المستودع
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # 2. تجهيز بيئة Java 21 باستخدام أحدث أداة لتفادي التحذيرات
     - name: Set up Java 21
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
 
+    # 3. تجميع ملفات المشروع عبر Maven
     - name: Build with Maven
-      run: mvn clean package --file pom.xml
+      run: mvn clean package -B
 
+    # 4. رفع واستخراج ملف الـ JAR الناتج للتحميل
     - name: Upload JAR Artifact
       uses: actions/upload-artifact@v4
       with:
