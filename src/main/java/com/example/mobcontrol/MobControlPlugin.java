@@ -13,26 +13,26 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Random;
 
 /**
- * الكلاس الرئيسي للإضافة: يدير الإعدادات ومستمعي الأحداث والأوامر
+ * الكلاس الرئيسي للإضافة: يدير الإعدادات، مستمعي الأحداث، والأوامر
  */
 public class MobControlPlugin extends JavaPlugin implements Listener, CommandExecutor {
 
-    // الحدود والقيم الثابتة
+    // الحدود والقيم الثابتة المتفق عليها
     private static final int BASE_RATE = 16;
     private static final int MIN_RATE = 1;
     private static final int MAX_RATE = 32;
 
-    // المتغير البرمجي الحامل للمعدل الحالي
+    // المتغير البرمجي لتخزين المعدل المطبق ومولد الأرقام العشوائية
     private int currentRate = BASE_RATE;
     private final Random random = new Random();
 
     @Override
     public void onEnable() {
-        // حفظ وقراءة ملف config.yml
+        // حفظ وقراءة ملف الإعدادات config.yml
         saveDefaultConfig();
         loadConfiguration();
 
-        // تسجيل مستمع الأحداث والأوامر
+        // تسجيل مراقبة الأحداث ومسؤول الأوامر
         getServer().getPluginManager().registerEvents(this, this);
         if (getCommand("mobcontrol") != null) {
             getCommand("mobcontrol").setExecutor(this);
@@ -65,36 +65,36 @@ public class MobControlPlugin extends JavaPlugin implements Listener, CommandExe
     }
 
     /**
-     * اعتراض حدث ظهور الوحوش المعادية الطبيعي
+     * اعتراض حدث ظهور الوحوش وتطبيق الحسابات البرمجية
      */
     @EventHandler
     public void onMobSpawn(CreatureSpawnEvent event) {
-        // التحقق من أن الكائن وحش معادٍ
+        // التأكد من أن الكائن وحش معادٍ (Monster)
         if (!(event.getEntity() instanceof Monster)) {
             return;
         }
 
-        // التدخل فقط مع الظهور الطبيعي في العالم
+        // التدخل فقط مع الظهور الطبيعي للوحوش في العالم لتجنب السباونرز
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) {
             return;
         }
 
-        // إذا كان المعدل أقل من 16 (تقليل الظهور بنسبة احتمالية)
+        // الحالة الأولى: إذا كان المعدل أقل من 16 (تقليل الظهور)
         if (currentRate < BASE_RATE) {
             int roll = random.nextInt(BASE_RATE) + 1;
             if (roll > currentRate) {
+                // إلغاء ظهور الوحش
                 event.setCancelled(true);
             }
         } 
-        // إذا كان المعدل أكبر من 16 (زيادة الظهور باستدعاء وحوش إضافية)
+        // الحالة الثانية: إذا كان المعدل أكبر من 16 (زيادة الكثافة)
         else if (currentRate > BASE_RATE) {
             int extraChance = currentRate - BASE_RATE;
             if (random.nextInt(BASE_RATE) < extraChance) {
-                event.getLocation().getWorld().spawn(
+                // استدعاء وحش إضافي مطابق في نفس الموقع عبر نوع الكائن EntityType بأمان
+                event.getLocation().getWorld().spawnEntity(
                     event.getLocation(),
-                    event.getEntity().getClass(),
-                    CreatureSpawnEvent.SpawnReason.CUSTOM,
-                    spawned -> {}
+                    event.getEntityType()
                 );
             }
         }
@@ -109,29 +109,30 @@ public class MobControlPlugin extends JavaPlugin implements Listener, CommandExe
             return false;
         }
 
-        // التحقق من صلاحية الإدارة
+        // التحقق من صلاحية المشرف
         if (!sender.hasPermission("mobcontrol.admin")) {
             sender.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
             return true;
         }
 
+        // عند كتابة الأمر مجرداً
         if (args.length == 0) {
             sender.sendMessage(ChatColor.YELLOW + "Usage: /mobcontrol <set <1-32> | reload>");
             sender.sendMessage(ChatColor.GRAY + "Current spawn rate: " + ChatColor.GREEN + currentRate);
             return true;
         }
 
-        // أمر إعادة التحميل: /mobcontrol reload
+        // تنفيذ أمر إعادة التحميل: /mobcontrol reload
         if (args[0].equalsIgnoreCase("reload")) {
             loadConfiguration();
             sender.sendMessage(ChatColor.GREEN + "MobControl configuration reloaded! Current rate: " + currentRate);
             return true;
         }
 
-        // أمر تحديد المعدل: /mobcontrol set <number>
+        // تنفيذ أمر تحديد المعدل: /mobcontrol set <number>
         if (args[0].equalsIgnoreCase("set")) {
             if (args.length < 2) {
-                sender.sendMessage(ChatColor.RED + "Please specify a value between 1 and 32.");
+                sender.sendMessage(ChatColor.RED + "Please specify a number between 1 and 32.");
                 return true;
             }
 
@@ -147,7 +148,7 @@ public class MobControlPlugin extends JavaPlugin implements Listener, CommandExe
                 sender.sendMessage(ChatColor.GREEN + "Spawn rate set to: " + ChatColor.GOLD + value);
 
             } catch (NumberFormatException e) {
-                sender.sendMessage(ChatColor.RED + "Please enter a valid whole number.");
+                sender.sendMessage(ChatColor.RED + "Invalid number format. Please enter an integer.");
             }
             return true;
         }
