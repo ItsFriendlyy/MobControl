@@ -1,0 +1,19 @@
+name: MobControl
+version: 1.0
+main: com.example.mobcontrol.MobControlPlugin
+api-version: '1.21'
+author: Developer
+description: التحكم في معدل ظهور الوحوش المعادية
+
+# تعريف الأوامر
+commands:
+  mobcontrol:
+    description: تعديل معدل ظهور الوحوش أو إعادة تحميل الإعدادات
+    permission: mobcontrol.admin
+    usage: /mobcontrol <set|reload> [value]
+
+# تعريف الصلاحيات
+permissions:
+  mobcontrol.admin:
+    description: السماح بتعديل إعدادات الإضافة
+    default: op
